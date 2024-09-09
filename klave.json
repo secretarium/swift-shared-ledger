@@ -1,0 +1,14 @@
+{
+    "version": "1",
+    "branches": [
+        "*"
+    ],
+    "applications": [
+        {
+            "name": "SharedLedger",
+            "slug": "sharedLedger",
+            "version": "0.0.1",
+            "rootDir": "/apps/shared_ledger"
+        }
+    ]
+}

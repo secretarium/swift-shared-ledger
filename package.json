@@ -1,0 +1,23 @@
+{
+    "name": "swift-shared-ledger",
+    "description": "This is a honest application for the Klave Network",
+    "author": "Jeremie <jeremie@secretarium.org> (https://github.com/jlabbeKlavo)",
+    "version": "0.0.0",
+    "license": "MIT",
+    "repository": "https://github.com/secretarium/swift-shared-ledger",
+    "scripts": {
+        "build": "stac ."
+    },
+    "devDependencies": {
+        "@klave/sdk": "0.12.0-dev.5",
+        "assemblyscript": "^0.27.26",
+        "tslib": "^2.6.2",
+        "visitor-as": "^0.11.4"
+    },
+    "dependencies": {
+        "as-base64": "^0.2.0",
+        "gh": "^2.8.9",
+        "path-complete-extname": "^1.0.0",
+        "zod": "^3.22.4"
+    }
+}
