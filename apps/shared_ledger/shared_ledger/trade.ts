@@ -2,13 +2,13 @@ import { Ledger, Crypto, JSON } from '@klave/sdk'
 import { success, error } from "../klave/types"
 import { encode as b64encode, decode as b64decode } from 'as-base64/assembly';
 import { address, amount, datetime } from "../klave/types";
-import { ConfirmTradeInput, QueryTradeByUTIInput, SettleTradeInput, TransferAssetInput } from './inputs/types';
+import { ConfirmTradeInput, ExecuteTradeInput, QueryTradeByUTIInput, SettleTradeInput, TransferAssetInput } from './inputs/types';
 import { Context } from '@klave/sdk/assembly';
 
 const TradesTable = "TradesTable";
 
 @JSON
-export class TradeExecution {
+export class TradeInfo {
     buyer: address;                 // Blockchain address of buyer
     seller: address;                // Blockchain address of seller
     asset: string;                  // Asset being traded
@@ -23,6 +23,19 @@ export class TradeExecution {
         this.quantity = quantity;
         this.price = price;
         this.tradeDate = tradeDate;
+    }
+}
+
+@JSON
+export class TradeExecution {
+    executedBy: address;           // Blockchain address of Clearing House
+    executionDate: datetime;     // Date and time of trade confirmation
+    executionStatus: string;     // MetaData for Trade Confirmation
+
+    constructor(executedBy: address, executionDate: datetime, executionStatus: string) {
+        this.executedBy = executedBy;
+        this.executionDate = executionDate;
+        this.executionStatus = executionStatus;
     }
 }
 
@@ -81,6 +94,7 @@ export class Trade {
     UTI: string;                    //Unique Trade Identifier
     tokenB64: string;               //Token allowing access to this trade
 
+    tradeInfo: TradeInfo;                  //Available with Read/Write for Trader/Investor
     tradeExecution: TradeExecution;        //Available with Read/Write for Broker/Dealer
     tradeConfirmation: TradeConfirmation;  //Available with Read/Write for ClearingHouse
     tradeTransfer: TradeTransfer;          //Available with Read/Write for Custodian
@@ -100,7 +114,8 @@ export class Trade {
             //Potentially check the format
             this.UTI = UTI;
         }
-        this.tradeExecution = new TradeExecution(buyer, seller, asset, quantity, price, tradeDate);
+        this.tradeInfo = new TradeInfo(buyer, seller, asset, quantity, price, tradeDate);
+        this.tradeExecution = new TradeExecution("", "", "");
         this.tradeConfirmation = new TradeConfirmation("", "", "");
         this.tradeTransfer = new TradeTransfer("", "", "");
         this.tradeSettlement = new TradeSettlement("", "", "");
@@ -109,8 +124,6 @@ export class Trade {
         this.status = "pending";
         this.status_history = new Array<StatusHistory>();
         this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
-
-        this.tokenB64 = b64encode(this.generate_trade_token(Context.get("trusted_time"), ""));
     }
 
     static load(UTI: string) : Trade | null {
@@ -120,14 +133,14 @@ export class Trade {
             return null;
         }
         let Trade = JSON.parse<Trade>(TradeObject);
-        // success(`Trade loaded successfully: '${Trade.id}'`);
+        // success(`Trade loaded successfully: '${Trade.UTI}'`);
         return Trade;
     }
 
     save(): void {
         let TradeObject = JSON.stringify<Trade>(this);
         Ledger.getTable(TradesTable).set(this.UTI, TradeObject);
-        success(`Trade saved successfully: ${this.UTI}`);
+        // success(`Trade saved successfully: ${this.UTI}`);
     }
 
     delete(): void {
@@ -135,16 +148,28 @@ export class Trade {
         success(`Trade deleted successfully: ${this.UTI}`);
     }
 
+    addExecutionDetails(input: ExecuteTradeInput): void {
+        this.tradeExecution = new TradeExecution(Context.get('sender'), Context.get("trusted_time"), input.executionStatus);
+        this.status = "executed";
+        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
+    }
+
     addConfirmationDetails(input: ConfirmTradeInput): void {
-        this.tradeConfirmation = new TradeConfirmation(input.confirmedBy, Context.get("trusted_time"), input.confirmationStatus);
+        this.tradeConfirmation = new TradeConfirmation(Context.get('sender'), Context.get("trusted_time"), input.confirmationStatus);
+        this.status = "confirmed";
+        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
     }
 
     addTransferDetails(input: TransferAssetInput): void {
-        this.tradeTransfer = new TradeTransfer(input.transferredBy, Context.get("trusted_time"), input.transferStatus);
+        this.tradeTransfer = new TradeTransfer(Context.get('sender'), Context.get("trusted_time"), input.transferStatus);
+        this.status = "transferred";
+        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
     }
 
     addSettlementDetails(input: SettleTradeInput): void {
-        this.tradeSettlement = new TradeSettlement(input.settledBy, Context.get("trusted_time"), input.settlementStatus);
+        this.tradeSettlement = new TradeSettlement(Context.get('sender'), Context.get("trusted_time"), input.settlementStatus);
+        this.status = "settled";
+        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
     }
 
     verify_trade_token(now: string, storageServer_private_key: string) : boolean {        

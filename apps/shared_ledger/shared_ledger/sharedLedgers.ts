@@ -43,16 +43,17 @@ export class SharedLedgers {
      * @param sharedLedgerId The id of the sharedLedger to add.     
      */
     addSharedLedger(sharedLedgerId: string): boolean {
-        let existingSharedLedger = SharedLedger.load(sharedLedgerId);
-        if (existingSharedLedger) {
-            error(`SharedLedger already exists: ${sharedLedgerId}`);
-            return false;
+        if (sharedLedgerId.length != 0) {
+            let existingSharedLedger = SharedLedger.load(sharedLedgerId);
+            if (existingSharedLedger) {
+                error(`SharedLedger already exists: ${sharedLedgerId}`);
+                return false;
+            }
         }
-        let sharedLedger = new SharedLedger(sharedLedgerId);        
+        let sharedLedger = new SharedLedger(sharedLedgerId);
         sharedLedger.users.push(Context.get('sender'));
         sharedLedger.save();
-        this.sharedLedgers.push(sharedLedger.id);
-
+        this.sharedLedgers.push(sharedLedger.id);        
         success(`SharedLedger added successfully: ${sharedLedger.id} `);
         return true;
     }
@@ -62,12 +63,12 @@ export class SharedLedgers {
      * @param sharedLedgerId The id of the sharedLedger to remove.
      */
     removeSharedLedger(sharedLedgerId: string): boolean {
-        let sharedLedger = SharedLedger.load(sharedLedgerId);
-        if (!sharedLedger) {
+        let existingSharedLedger = SharedLedger.load(sharedLedgerId);
+        if (!existingSharedLedger) {
             error("SharedLedger not found: " + sharedLedgerId);
             return false;
         }
-        sharedLedger.delete();
+        existingSharedLedger.delete();
 
         let index = this.sharedLedgers.indexOf(sharedLedgerId);
         this.sharedLedgers.splice(index, 1);

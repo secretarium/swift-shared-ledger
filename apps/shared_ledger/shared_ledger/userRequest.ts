@@ -29,7 +29,7 @@ export class UserRequest {
     static load(id: string) : UserRequest | null {
         let userTable = Ledger.getTable(UserRequestsTable).get(id);
         if (userTable.length == 0) {
-            error(`UserRequest ${id} does not exist. Create it first`);
+            // error(`UserRequest ${id} does not exist. Create it first`);
             return null;
         }
         let user = JSON.parse<UserRequest>(userTable);

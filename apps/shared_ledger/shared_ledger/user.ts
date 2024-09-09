@@ -6,16 +6,87 @@ import { UserOutput } from "./outputs/types";
 
 const UsersTable = "UsersTable";
 
+/** Role types. */
+export enum RoleType {    
+    None = 0,
+    Admin = 1,
+    Trader = 2,
+    Investor = 3,
+    Broker = 4,
+    Dealer = 5,
+    Custodian = 6,  
+    ClearingHouse = 7,
+    SettlementAgent = 8,
+    Regulator = 9,    
+};
+
+export function role_type(input: string): RoleType {
+    if (input === "admin")
+        return RoleType.Admin;  
+    if (input === "trader")
+        return RoleType.Trader;
+    if (input === "investor")
+        return RoleType.Investor;
+    if (input === "broker")
+        return RoleType.Broker;
+    if (input === "dealer")
+        return RoleType.Dealer;
+    if (input === "custodian")
+        return RoleType.Custodian;
+    if (input === "clearingHouse")
+        return RoleType.ClearingHouse;
+    if (input === "settlementAgent")
+        return RoleType.SettlementAgent;
+    if (input === "regulator")
+        return RoleType.Regulator;
+    return RoleType.None;
+}
+
+/** Role types. */
+export enum JurisdictionType {    
+    None = 0,
+    Global = 1,
+    Northern_Europe = 2,
+    Southern_Europe = 3,
+    UK = 4,
+    Northern_America = 5,
+    Southern_America = 6,  
+    East_Asia = 7,
+    Middle_East = 8,
+    Africa = 9,
+};
+
+export function jurisdiction_type(input: string): JurisdictionType {
+    if (input === "global")
+        return JurisdictionType.Global;
+    if (input === "northernEurope")
+        return JurisdictionType.Northern_Europe;
+    if (input === "southernEurope")
+        return JurisdictionType.Southern_Europe;
+    if (input === "uk")
+        return JurisdictionType.UK;
+    if (input === "northernAmerica")
+        return JurisdictionType.Northern_America;
+    if (input === "southernAmerica")
+        return JurisdictionType.Southern_America;
+    if (input === "eastAsia")
+        return JurisdictionType.East_Asia;
+    if (input === "middleEast")
+        return JurisdictionType.Middle_East;
+    if (input === "africa")
+        return JurisdictionType.Africa;
+    return JurisdictionType.None;
+}
 
 @JSON 
 export class SharedLedgerRole {
     sharedLedgerId: string;
-    role: string;
+    role: RoleType;
     jurisdiction: string;
 
     constructor(sharedLedgerId: string, role: string, jurisdiction: string) {
         this.sharedLedgerId = sharedLedgerId;
-        this.role = role;
+        this.role = role_type(role);
         this.jurisdiction = jurisdiction;
     }
 }
@@ -73,17 +144,27 @@ export class User {
         for (let i = 0; i < this.roles.length; ++i)
         {
             if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == 'admin';
+                return this.roles[i].role == RoleType.Admin;
             }
         }
         return false;
     }   
     
+    canCreate(sharedLedgerId: string): boolean {
+        for (let i = 0; i < this.roles.length; ++i)
+        {
+            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
+                return this.roles[i].role == RoleType.Trader || this.roles[i].role == RoleType.Investor;
+            }
+        }
+        return false;
+    }
+
     canExecute(sharedLedgerId: string): boolean {
         for (let i = 0; i < this.roles.length; ++i)
         {
             if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == 'broker' || this.roles[i].role == 'dealer';
+                return this.roles[i].role == RoleType.Broker || this.roles[i].role == RoleType.Dealer;
             }
         }
         return false;
@@ -93,7 +174,7 @@ export class User {
         for (let i = 0; i < this.roles.length; ++i)
         {
             if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == 'clearingHouse';
+                return this.roles[i].role == RoleType.ClearingHouse;
             }
         }
         return false;
@@ -103,7 +184,7 @@ export class User {
         for (let i = 0; i < this.roles.length; ++i)
         {
             if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == 'custodian';
+                return this.roles[i].role == RoleType.Custodian;
             }
         }
         return false;
@@ -113,7 +194,7 @@ export class User {
         for (let i = 0; i < this.roles.length; ++i)
         {
             if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == 'settlementAgent';
+                return this.roles[i].role == RoleType.SettlementAgent;
             }
         }
         return false;
@@ -123,7 +204,7 @@ export class User {
         for (let i = 0; i < this.roles.length; ++i)
         {
             if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == 'regulator';
+                return this.roles[i].role == RoleType.Regulator;
             }
         }
         return false;

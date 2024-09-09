@@ -2,7 +2,7 @@ import { JSON } from "@klave/sdk";
 import { address, amount, datetime } from "../../klave/types";
 
 @JSON 
-export class TradeInput {
+export class SubmitTradeInput {
     SLID: string;               // SharedLedger ID
     UTI: string;                // Optional: UTI if generated externally
     buyer: address;             // Blockchain address of buyer
@@ -14,10 +14,25 @@ export class TradeInput {
 }
 
 @JSON 
-export class ConfirmTradeInput {
-    SLID: string;
+export class TradeInput {
+    SLID: string;               // SharedLedger ID
+    UTI: string;                // UTI of the trade
+    tokenB64: string;           // Base64 encoded token
+}
+
+@JSON 
+export class ExecuteTradeInput {
+    SLID: string;    
     UTI: string;
-    confirmedBy: address;       // Blockchain address confirming the trade
+    tokenB64: string;           // Base64 encoded token
+    executionStatus: string;    // Executed/MetaData
+}
+
+@JSON 
+export class ConfirmTradeInput {
+    SLID: string;    
+    UTI: string;
+    tokenB64: string;           // Base64 encoded token
     confirmationStatus: string; // Confirmed/Rejected/MetaData
 }
 
@@ -26,7 +41,7 @@ export class ConfirmTradeInput {
 export class TransferAssetInput {
     SLID: string;
     UTI: string;
-    transferredBy: address;         // Blockchain address settling the trade
+    tokenB64: string;           // Base64 encoded token
     transferStatus: string;         // MetaData
 }
 
@@ -35,7 +50,7 @@ export class TransferAssetInput {
 export class SettleTradeInput {
     SLID: string;
     UTI: string;
-    settledBy: address;             // Blockchain address settling the trade
+    tokenB64: string;           // Base64 encoded token
     settlementStatus: string;       // MetaData
 }
 
@@ -43,7 +58,7 @@ export class SettleTradeInput {
 export class CancelTradeInput {
     SLID: string;
     UTI: string;
-    cancelledBy: address;   // Blockchain address of the party initiating the cancellation
+    tokenB64: string;           // Base64 encoded token
     reason: string;         // Reason for cancelling the trade
 }
 
@@ -51,29 +66,30 @@ export class CancelTradeInput {
 export class QueryTradeByUTIInput {
     SLID: string;
     UTI: string;
+    tokenB64: string;           // Base64 encoded token
 }
 
 @JSON 
 export class AuditTradeByUTIInput {
     SLID: string;
     UTI: string;
+    tokenB64: string;           // Base64 encoded token
 }
 
 @JSON 
 export class SetIdentitiesInput {
     resetKlaveServer: boolean;
-    resetStorageServer: boolean;
 }
 
 
 @JSON
 export class UserRequestInput {
-    sharedLedgerId: string;
+    SLID: string;
     role: string;
     jurisdiction: string;
 
-    constructor(sharedLedgerId: string, role: string, jurisdiction: string) {
-        this.sharedLedgerId = sharedLedgerId;
+    constructor(SLID: string, role: string, jurisdiction: string) {
+        this.SLID = SLID;
         this.role = role;
         this.jurisdiction = jurisdiction;
     }
@@ -86,5 +102,5 @@ export class ApproveUserRequestInput {
 
 @JSON
 export class SharedLedgerIDInput {
-    sharedLedgerId: string;    
+    SLID: string;    
 }
