@@ -1,6 +1,6 @@
 import { Context, Notifier } from "@klave/sdk/assembly";
-import { TradeInput, ConfirmTradeInput, SettleTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, TransferAssetInput, SubmitTradeInput} from "./shared_ledger/inputs/types";
-import { GenericOutput } from "./shared_ledger/outputs/types";
+import { TradeInput, ConfirmTradeInput, SettleTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, TransferAssetInput, SubmitTradeInput, MultipleTradeInput} from "./shared_ledger/inputs/types";
+import { ListOutput, GenericOutput } from "./shared_ledger/outputs/types";
 import { Keys } from "./shared_ledger/keys";
 import { success, error } from "./klave/types";
 import { UserRequests } from "./shared_ledger/userRequests";
@@ -129,9 +129,9 @@ export function settleTrade(input: SettleTradeInput): void {
 }
 
 /**
- * @query
+ * @transaction
  */
-export function queryInfo(input: TradeInput): void {
+export function getTradeInfo(input: TradeInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
     if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
@@ -143,13 +143,49 @@ export function queryInfo(input: TradeInput): void {
         return;
     }
 
+    if (!sharedLedger.users.includes(Context.get('sender'))) {
+        error(`You are not authorized to remove trades from this sharedLedger.`);
+        return;
+    }
+
+    let user = User.load(Context.get('sender'));
+    if (user === null)
+    {
+        error("User not found");
+        return;
+    }    
+    success(sharedLedger.getTradeInfo(user, input.UTI, input.tokenB64));
+}
+
+/**
+ * @transaction
+ */
+export function getMultipleTradeInfo(input: MultipleTradeInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger does not exist. Create it first.`);
+        return;
+    }
+    if (sharedLedger.locked) {
+        error(`SharedLedger ${input.SLID} is now locked.`);
+        return;
+    }
+    if (!sharedLedger.users.includes(Context.get('sender'))) {
+        error(`You are not authorized to remove trades from this sharedLedger.`);
+        return;
+    }
+
     let user = User.load(Context.get('sender'));
     if (user === null)
     {
         error("User not found");
         return;
     }
-    sharedLedger.queryInfo(input.UTI, input.tokenB64);
+
+    Notifier.sendJson<ListOutput>({
+        requestId: Context.get('request_id'),
+        result: sharedLedger.getMultipleTradeInfo(user, input.trades)
+    });
 }
 
 /**

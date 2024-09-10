@@ -15,14 +15,16 @@ export class TradeInfo {
     quantity: amount;               // Quantity of the asset
     price: amount;                  // Trade price
     tradeDate: datetime;            // Date and time of trade execution
+    jurisdiction: string;           // Jurisdiction of the trade
 
-    constructor(buyer: address, seller: address, asset: string, quantity: amount,  price: amount, tradeDate: datetime) {
+    constructor(buyer: address, seller: address, asset: string, quantity: amount,  price: amount, tradeDate: datetime, jurisdiction: string) {
         this.buyer = buyer;
         this.seller = seller;
         this.asset = asset;
         this.quantity = quantity;
         this.price = price;
         this.tradeDate = tradeDate;
+        this.jurisdiction = jurisdiction;
     }
 }
 
@@ -79,7 +81,7 @@ export class TradeSettlement {
 }
 
 @JSON
-export class StatusHistory {
+export class StatusLog {
     datetime: datetime;
     status: string;
 
@@ -89,32 +91,44 @@ export class StatusHistory {
     }
 }
 
+@JSON 
+export class AuditLog {
+    performedBy: address;
+    datetime: string;
+
+    constructor(performedBy: address, datetime: string) {
+        this.performedBy = performedBy;
+        this.datetime = datetime;
+    }
+}
+
 @JSON
 export class Trade {    
-    UTI: string;                    //Unique Trade Identifier
-    tokenB64: string;               //Token allowing access to this trade
+    UTI: string;                            //Unique Trade Identifier
+    tokenB64: string;                       //Token allowing access to this trade
 
-    tradeInfo: TradeInfo;                  //Available with Read/Write for Trader/Investor
-    tradeExecution: TradeExecution;        //Available with Read/Write for Broker/Dealer
-    tradeConfirmation: TradeConfirmation;  //Available with Read/Write for ClearingHouse
-    tradeTransfer: TradeTransfer;          //Available with Read/Write for Custodian
-    tradeSettlement: TradeSettlement;      //Available with Read/Write for Settlement Agent
+    tradeInfo: TradeInfo;                   //Available with Read/Write for Trader/Investor
+    tradeExecution: TradeExecution;         //Available with Read/Write for Broker/Dealer
+    tradeConfirmation: TradeConfirmation;   //Available with Read/Write for ClearingHouse
+    tradeTransfer: TradeTransfer;           //Available with Read/Write for Custodian
+    tradeSettlement: TradeSettlement;       //Available with Read/Write for Settlement Agent
 
-    status: string;                     // Current status (e.g., "pending", "confirmed", "settled")
-    status_history : Array<StatusHistory>;     
+    status: string;                         // Current status (e.g., "pending", "confirmed", "settled")
+    status_history : Array<StatusLog>;     
+    audit_history: Array<AuditLog>;         // Audit trail of the trade
 
-    constructor(UTI: string, buyer: address, seller: address, asset: string, quantity: amount, price: amount, tradeDate: datetime) {
+    constructor(UTI: string, buyer: address, seller: address, asset: string, quantity: amount, price: amount, tradeDate: datetime, jurisdiction: string) {
         this.UTI = "";
         if (UTI.length == 0) {
             //Create a UTI with a format corresponding to BOFAUS3N.TRADE20230905SEQ1234567890
             //<SWIFTCode>.TRADE<YYYYMMDD><sequence number for uniqueness>
-            this.UTI = "SWIFT" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(16))) + ".TRADE" + tradeDate + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(32)));
+            this.UTI = "SWIFT" + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(8))) + ".TRADE" + tradeDate + b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(8)));
         }
         else {
             //Potentially check the format
             this.UTI = UTI;
         }
-        this.tradeInfo = new TradeInfo(buyer, seller, asset, quantity, price, tradeDate);
+        this.tradeInfo = new TradeInfo(buyer, seller, asset, quantity, price, tradeDate, jurisdiction);
         this.tradeExecution = new TradeExecution("", "", "");
         this.tradeConfirmation = new TradeConfirmation("", "", "");
         this.tradeTransfer = new TradeTransfer("", "", "");
@@ -122,8 +136,9 @@ export class Trade {
 
         this.tokenB64 = "";
         this.status = "pending";
-        this.status_history = new Array<StatusHistory>();
-        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
+        this.status_history = new Array<StatusLog>();
+        this.audit_history = new Array<AuditLog>();
+        this.status_history.push(new StatusLog(Context.get("trusted_time"), this.status));
     }
 
     static load(UTI: string) : Trade | null {
@@ -151,25 +166,25 @@ export class Trade {
     addExecutionDetails(input: ExecuteTradeInput): void {
         this.tradeExecution = new TradeExecution(Context.get('sender'), Context.get("trusted_time"), input.executionStatus);
         this.status = "executed";
-        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
+        this.status_history.push(new StatusLog(Context.get("trusted_time"), this.status));
     }
 
     addConfirmationDetails(input: ConfirmTradeInput): void {
         this.tradeConfirmation = new TradeConfirmation(Context.get('sender'), Context.get("trusted_time"), input.confirmationStatus);
         this.status = "confirmed";
-        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
+        this.status_history.push(new StatusLog(Context.get("trusted_time"), this.status));
     }
 
     addTransferDetails(input: TransferAssetInput): void {
         this.tradeTransfer = new TradeTransfer(Context.get('sender'), Context.get("trusted_time"), input.transferStatus);
         this.status = "transferred";
-        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
+        this.status_history.push(new StatusLog(Context.get("trusted_time"), this.status));
     }
 
     addSettlementDetails(input: SettleTradeInput): void {
         this.tradeSettlement = new TradeSettlement(Context.get('sender'), Context.get("trusted_time"), input.settlementStatus);
         this.status = "settled";
-        this.status_history.push(new StatusHistory(Context.get("trusted_time"), this.status));
+        this.status_history.push(new StatusLog(Context.get("trusted_time"), this.status));
     }
 
     verify_trade_token(now: string, storageServer_private_key: string) : boolean {        

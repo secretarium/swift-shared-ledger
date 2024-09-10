@@ -1,8 +1,8 @@
 import { Ledger, JSON, Crypto, Context } from "@klave/sdk";
 import { success, error } from "../klave/types"
 import { encode as b64encode } from 'as-base64/assembly';
-import { Trade } from "./trade";
-import { ConfirmTradeInput, SettleTradeInput, SubmitTradeInput, TradeInput, TransferAssetInput } from "./inputs/types";
+import { AuditLog, StatusLog, Trade } from "./trade";
+import { ConfirmTradeInput, SettleTradeInput, SubmitTradeInput, TradeIdentification, TradeInput, TransferAssetInput } from "./inputs/types";
 import { Notifier } from "@klave/sdk/assembly";
 import { QueryTradeFromConfirmation, QueryTradeFromConfirmationOutput, QueryTradeFromCreation, QueryTradeFromCreationOutput, QueryTradeFromExecution, QueryTradeFromExecutionOutput, QueryTradeFromSettlement, QueryTradeFromSettlementOutput, QueryTradeFromTransfer, QueryTradeFromTransferOutput, SharedLedgerContent, SharedLedgerContentOutput, SubmitTradeOutput } from "./outputs/types";
 import { SharedLedgerRole, User } from "./user";
@@ -102,7 +102,7 @@ export class SharedLedger {
             return false;
         }
 
-        let trade = new Trade(input.UTI, input.buyer, input.seller, input.asset, input.quantity, input.price, input.tradeDate);
+        let trade = new Trade(input.UTI, input.buyer, input.seller, input.asset, input.quantity, input.price, input.tradeDate, input.jurisdiction);
         trade.tokenB64 = b64encode(trade.generate_trade_token(Context.get("trusted_time"), keys.klaveServer_private_key));            
         trade.save();
 
@@ -278,67 +278,49 @@ export class SharedLedger {
         return false;
     }
 
-    queryInfo(UTI: string, tokenB64: string): void {
-        if (!this.users.includes(Context.get('sender'))) {
-            error(`You are not authorized to remove trades from this sharedLedger.`);
-            return;
-        }
-
+    getTradeInfo(user: User, UTI: string, tokenB64: string): string {
         let trade = Trade.load(UTI);
-        if (trade == null) {
-            error(`Trade ${UTI} not found`);
-            return;
+        if (trade == null) {            
+            return `Error: Trade ${UTI} not found`;
         }
 
-        if (tokenB64 != trade.tokenB64) {
-            error(`Trade token ${trade.tokenB64} does not match given token ${tokenB64} for trade ${UTI}`);
-            return;
+        if (tokenB64 != trade.tokenB64) {            
+            return `Error: Trade token ${trade.tokenB64} does not match given token ${tokenB64} for trade ${UTI}`;
         }
 
-        let user = User.load(Context.get('sender'))
-        if (!user) {
-            error("User not found: " + Context.get('sender'));
-            return;
+        if (user.getJurisdiction(this.id) != trade.tradeInfo.jurisdiction) {            
+            return `Error: User ${user.id} is not authorized to query trade ${UTI}`;
         }
 
-        if (user.canCreate(this.id)) {
-            let response = new QueryTradeFromCreation(trade);
-            Notifier.sendJson<QueryTradeFromCreationOutput>({
-                requestId: Context.get('request_id'),
-                result: response
-            });    
-            return;
-        }
+        trade.audit_history.push(new AuditLog(user.id, Context.get("trusted_time")));
+        trade.save();
 
+        if (user.canCreate(this.id)) {                        
+            return JSON.stringify<QueryTradeFromCreation>(new QueryTradeFromCreation(trade));
+        }
         if (user.canExecute(this.id)) {
-            let response = new QueryTradeFromExecution(trade);
-            Notifier.sendJson<QueryTradeFromExecutionOutput>({
-                requestId: Context.get('request_id'),
-                result: response
-            });    
-            return;
+            return JSON.stringify<QueryTradeFromExecution>(new QueryTradeFromExecution(trade));
         }
         if (user.canConfirm(this.id)) {
-            Notifier.sendJson<QueryTradeFromConfirmationOutput>({
-                requestId: Context.get('request_id'),
-                result: new QueryTradeFromConfirmation(trade)
-            });    
-            return;
+            return JSON.stringify<QueryTradeFromConfirmation>(new QueryTradeFromConfirmation(trade));
         }
         if (user.canTransfer(this.id)) {
-            Notifier.sendJson<QueryTradeFromTransferOutput>({
-                requestId: Context.get('request_id'),
-                result: new QueryTradeFromTransfer(trade)
-            });    
-            return;
+            return JSON.stringify<QueryTradeFromTransfer>(new QueryTradeFromTransfer(trade));
         }
         if (user.canSettle(this.id)) {
-            Notifier.sendJson<QueryTradeFromSettlementOutput>({
-                requestId: Context.get('request_id'),
-                result: new QueryTradeFromSettlement(trade)
-            });    
-            return;
+            return JSON.stringify<QueryTradeFromSettlement>(new QueryTradeFromSettlement(trade));
         }
-        error(`User ${user.id} is not authorized to query trade ${UTI}`);
+        if (user.isAdmin(this.id) || user.isRegulator(this.id)) {
+            return JSON.stringify<Trade>(trade);
+        }                
+        return `Error: User ${user.id} is not authorized to query trade ${UTI}`;
+    }
+
+    getMultipleTradeInfo(user: User, trades: Array<TradeIdentification>): Array<string> {
+        let result = new Array<string>();
+        for (let i = 0; i < trades.length; i++) {
+            result.push(this.getTradeInfo(user, trades[i].UTI, trades[i].tokenB64));
+        }
+        return result;
     }
 }

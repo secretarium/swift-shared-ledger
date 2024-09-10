@@ -149,7 +149,27 @@ export class User {
         }
         return false;
     }   
-    
+
+    isRegulator(sharedLedgerId: string): boolean {
+        for (let i = 0; i < this.roles.length; ++i)
+        {
+            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
+                return this.roles[i].role == RoleType.Regulator;
+            }
+        }
+        return false;
+    }   
+
+    getJurisdiction(sharedLedgerId: string): string {
+        for (let i = 0; i < this.roles.length; ++i)
+        {
+            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
+                return this.roles[i].jurisdiction;
+            }
+        }
+        return "";
+    }       
+
     canCreate(sharedLedgerId: string): boolean {
         for (let i = 0; i < this.roles.length; ++i)
         {

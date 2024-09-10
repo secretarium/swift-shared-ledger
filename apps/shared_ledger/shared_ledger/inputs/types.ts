@@ -11,6 +11,7 @@ export class SubmitTradeInput {
     quantity: amount;           // Quantity of the asset
     price: amount;              // Trade price
     tradeDate: datetime;        // Date and time of trade execution
+    jurisdiction: string;       // Jurisdiction of the trade
 }
 
 @JSON 
@@ -18,6 +19,17 @@ export class TradeInput {
     SLID: string;               // SharedLedger ID
     UTI: string;                // UTI of the trade
     tokenB64: string;           // Base64 encoded token
+}
+
+@JSON 
+export class TradeIdentification {
+    UTI: string;                // UTI of the trade
+    tokenB64: string;           // Base64 encoded token
+}
+@JSON
+export class MultipleTradeInput {
+    SLID: string;                       // SharedLedger ID
+    trades: Array<TradeIdentification>; // Array of UTI and tokenB64    
 }
 
 @JSON 
