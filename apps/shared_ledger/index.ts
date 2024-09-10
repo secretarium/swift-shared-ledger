@@ -313,6 +313,22 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
 }
 
 /**
+ * @transaction
+ */
+export function addUserNoAppovalNeeded(input: UserRequestInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null)
+    {
+        error(`SharedLedger ${input.SLID} not found`);
+        return;
+    }
+    sharedLedger.addUser(Context.get('sender'), input.role, input.jurisdiction);
+    sharedLedger.save();
+    success(`Successfully added User ${Context.get('sender')} to join sharedLedger ${input.SLID} as ${input.role}`);
+}
+
+
+/**
  * @transaction  
  */
 export function resetIdentities(input: SetIdentitiesInput): void {

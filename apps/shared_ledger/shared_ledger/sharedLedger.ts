@@ -7,6 +7,7 @@ import { Notifier } from "@klave/sdk/assembly";
 import { QueryTradeFromConfirmation, QueryTradeFromConfirmationOutput, QueryTradeFromCreation, QueryTradeFromCreationOutput, QueryTradeFromExecution, QueryTradeFromExecutionOutput, QueryTradeFromSettlement, QueryTradeFromSettlementOutput, QueryTradeFromTransfer, QueryTradeFromTransferOutput, SharedLedgerContent, SharedLedgerContentOutput, SubmitTradeOutput } from "./outputs/types";
 import { SharedLedgerRole, User } from "./user";
 import { Keys } from "./keys";
+import { Users } from "./users";
 
 const SharedLedgersTable = "SharedLedgersTable";
 
@@ -58,6 +59,7 @@ export class SharedLedger {
     }
 
     delete(): void {
+        //Delete trades first
         for (let i = 0; i < this.trades.length; i++) {
             let trade = Trade.load(this.trades[i]);
             if (trade == null) {
@@ -66,6 +68,14 @@ export class SharedLedger {
             trade.delete();
         }
         this.trades = new Array<string>();
+        //Delete users first
+        for (let i = 0; i < this.users.length; i++) {
+            let user = User.load(this.users[i]);
+            if (user == null) {
+                continue;
+            }
+            user.delete();
+        }
         this.users = new Array<string>();
         this.locked = false;
         Ledger.getTable(SharedLedgersTable).unset(this.id);
@@ -266,12 +276,15 @@ export class SharedLedger {
             let user = User.load(userId);
             if (!user)
             {
-                error("User not found");
-                return false;
+                let users = Users.load();
+                if (users.addUser(userId, this.id, role, jurisdiction)) {
+                    users.save();
+                }            
             }
-            user.updateRole(new SharedLedgerRole(this.id, role, jurisdiction));
-            user.save();
-
+            else {
+                user.updateRole(new SharedLedgerRole(this.id, role, jurisdiction));
+                user.save();
+            }
             this.users.push(userId);
             return true;
         }

@@ -46,13 +46,13 @@ export class Users {
      * @param userId The id of the user to add.     
      * @param dataRoomId The id of the dataRoom the user would want a role for.
      */
-    addUser(userId: string, dataRoomId: string, role: string, jurisdiction: string): boolean {
+    addUser(userId: string, sharedLedgerId: string, role: string, jurisdiction: string): boolean {
         let existingUser = User.load(userId);
         if (existingUser) {
             error(`User already exists: ${userId}`);
             return false;
         }
-        let user = new User(userId, new SharedLedgerRole(dataRoomId, role, jurisdiction));
+        let user = new User(userId, new SharedLedgerRole(sharedLedgerId, role, jurisdiction));
         user.save();
         this.users.push(user.id);
 
