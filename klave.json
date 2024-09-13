@@ -12,9 +12,9 @@
             "rootDir": "/apps/shared_ledger"
         },
         {
-            "name": "Swift-Hackathon-2024-WASM",
-            "slug": "swifthackathon2024wasm",
-            "version": "0.0.2",
+            "name": "Swift-Hackathon-2024-WASM-Challenge2",
+            "slug": "swifthackathon2024wasm-challenge2",
+            "version": "0.0.1",
             "rootDir": "/apps/shared_ledger_wasm"
         }
     ]
