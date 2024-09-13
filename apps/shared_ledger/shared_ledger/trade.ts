@@ -12,7 +12,7 @@ const TradesTable = "TradesTable";
 @JSON
 export class TradeInfo {
     buyerName: address;             // Blockchain address of buyer  
-    buyerCountry: string;           // Country of buyer             
+    buyerCountry: string;           // Country of buyer       
     sellerName: address;            // Blockchain address of seller    
     sellerCountry: string;          // Country of seller
     asset: string;                  // Asset being traded           - custodian/clearing house
@@ -31,17 +31,6 @@ export class TradeInfo {
         this.price = tradeInput.price;
         this.tradeDate = tradeInput.tradeDate;
         this.jurisdiction = tradeInput.jurisdiction;
-    }
-
-    onlyKeepAsset(): void {
-        this.buyerName = "";
-        this.sellerName = "";
-        this.buyerCountry = "";
-        this.sellerCountry = "";
-        this.quantity = 0;
-        this.price = 0;
-        this.tradeDate = "";
-        this.jurisdiction = JurisdictionType.None;
     }
 }
 
@@ -68,20 +57,35 @@ export class TradeCreation {
         this.info.tradeDate = "";
         this.info.jurisdiction = JurisdictionType.None;
         this.addedBy = "";
-        this.datetime = "";        
     }
 
-    onlyKeepAsset(): void {
+    onlyKeepAssetAndSellerInfo(): void {
         this.info.buyerName = "";
-        this.info.sellerName = "";
         this.info.buyerCountry = "";
+        this.info.quantity = 0;
+        this.info.price = 0;
+        this.info.tradeDate = "";
+        this.info.jurisdiction = JurisdictionType.None;
+        this.addedBy = "";
+    }
+
+    onlyKeepAssetAndBuyerInfo(): void {
+        this.info.sellerName = "";
         this.info.sellerCountry = "";
         this.info.quantity = 0;
         this.info.price = 0;
         this.info.tradeDate = "";
         this.info.jurisdiction = JurisdictionType.None;
+        this.addedBy = "";
     }
 
+    onlyKeepAssetBuyerAndSellerInfo(): void {
+        this.info.quantity = 0;
+        this.info.price = 0;
+        this.info.tradeDate = "";
+        this.info.jurisdiction = JurisdictionType.None;
+        this.addedBy = "";
+    }
 }
 
 @JSON
@@ -184,9 +188,10 @@ export class Trade {
     tradePublicComments: Array<TradeComment>;   
     tradePrivateComments: Array<TradeComment>;  
 
-    matchTradeDetails: Array<MatchLog>;      // Settlement Agent => settling    (buyerName, buyerCountry, sellerName, sellerCountry)
-    matchMoneyTransfer: Array<MatchLog>;     // Clearing House  (price) inputs(asset)
-    matchAssetTransfer: Array<MatchLog>;     // Custodian       (quantity) inputs(asset)
+    matchTradeDetails:  Array<MatchLog>;        // Settlement Agent => settling    (buyerName, buyerCountry, sellerName, sellerCountry)
+    matchMoneyTransfer: Array<MatchLog>;        // Clearing House  (price) inputs(asset)
+    matchAssetTransfer: Array<MatchLog>;        // Custodian       (quantity) inputs(asset)
+    matchAMLSanction:   Array<MatchLog>;        // AMLSanction   (AMLRiskRank, UnderSanction) 
 
     status: StatusType;                         // Current status (e.g., "executed", "settling", "settled")
     statusHistory : Array<StatusLog>;     
@@ -206,6 +211,7 @@ export class Trade {
         this.matchTradeDetails = new Array<MatchLog>();
         this.matchMoneyTransfer = new Array<MatchLog>();
         this.matchAssetTransfer = new Array<MatchLog>();
+        this.matchAMLSanction = new Array<MatchLog>();
 
         this.tokenB64 = "";
         this.status = StatusType.Executed;
@@ -269,6 +275,9 @@ export class Trade {
             case RoleType.Custodian:
                 this.matchAssetTransfer.push(new MatchLog(Context.get('sender'), Context.get("trusted_time"), key, value));
                 break;
+            case RoleType.AMLSanction:
+                this.matchAMLSanction.push(new MatchLog(Context.get('sender'), Context.get("trusted_time"), key, value));
+                break;
             default:
                 error("Invalid role type");
         }        
@@ -280,7 +289,6 @@ export class Trade {
         tradeDetails.events.push(new MatchedEvent("buyerCountry", false));
         tradeDetails.events.push(new MatchedEvent("sellerName", false));
         tradeDetails.events.push(new MatchedEvent("sellerCountry", false));
-        tradeDetails.events.push(new MatchedEvent("asset", false));        
 
         for (let i = 0; i < this.matchTradeDetails.length; i++) {
             if (this.matchTradeDetails[i].matchedKey == "buyerName") {
@@ -295,9 +303,6 @@ export class Trade {
             if (this.matchTradeDetails[i].matchedKey == "sellerCountry") {
                 tradeDetails.events[3].matched = true;
             }
-            if (this.matchTradeDetails[i].matchedKey == "asset") {
-                tradeDetails.events[4].matched = true;
-            }
         }
         for (let i = 0; i < tradeDetails.events.length; i++) {
             if (!tradeDetails.events[i].matched) {
@@ -311,14 +316,10 @@ export class Trade {
         let assetTransfer = new MatchCheckList();
         assetTransfer.events = new Array<MatchedEvent>();
         assetTransfer.events.push(new MatchedEvent("quantity", false));
-        assetTransfer.events.push(new MatchedEvent("asset", false));
 
         for (let i = 0; i < this.matchAssetTransfer.length; i++) {
-            if (this.matchTradeDetails[i].matchedKey == "quantity") {
+            if (this.matchAssetTransfer[i].matchedKey == "quantity") {
                 assetTransfer.events[0].matched = true;
-            }
-            if (this.matchTradeDetails[i].matchedKey == "asset") {
-                assetTransfer.events[1].matched = true;
             }
         }
         for (let i = 0; i < assetTransfer.events.length; i++) {
@@ -333,14 +334,10 @@ export class Trade {
         let moneyTransfer = new MatchCheckList();
         moneyTransfer.events = new Array<MatchedEvent>();
         moneyTransfer.events.push(new MatchedEvent("price", false));
-        moneyTransfer.events.push(new MatchedEvent("asset", false));
 
         for (let i = 0; i < this.matchMoneyTransfer.length; i++) {
-            if (this.matchTradeDetails[i].matchedKey == "price") {
+            if (this.matchMoneyTransfer[i].matchedKey == "price") {
                 moneyTransfer.events[0].matched = true;
-            }
-            if (this.matchTradeDetails[i].matchedKey == "asset") {
-                moneyTransfer.events[1].matched = true;
             }
         }
 
@@ -352,12 +349,34 @@ export class Trade {
         return true;
     }
 
+    checkAMLSanctionsMatch(): boolean {
+        let amlSanctionDetails = new MatchCheckList();
+        amlSanctionDetails.events.push(new MatchedEvent("amlRiskRank", false));
+        amlSanctionDetails.events.push(new MatchedEvent("underSanction", false));
+
+        for (let i = 0; i < this.matchAMLSanction.length; i++) {
+            if (this.matchAMLSanction[i].matchedKey == "amlRiskRank") {
+                amlSanctionDetails.events[0].matched = true;
+            }
+            if (this.matchAMLSanction[i].matchedKey == "underSanction") {
+                amlSanctionDetails.events[1].matched = true;
+            }
+        }
+        for (let i = 0; i < amlSanctionDetails.events.length; i++) {
+            if (!amlSanctionDetails.events[i].matched) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     processStatusProgression(): void {
         if (this.status === StatusType.Executed && this.checkTradeDetailsMatch()) {
             this.status = StatusType.Settling;
             this.statusHistory.push(new StatusLog(Context.get("trusted_time"), this.status));
         }
-        if (this.status === StatusType.Settling && this.checkAssetTransferMatch() && this.checkMoneyTransferMatch()) {
+        if (this.status === StatusType.Settling && this.checkAssetTransferMatch() && this.checkMoneyTransferMatch() && this.checkAMLSanctionsMatch()) {
             this.status = StatusType.Settled;
             this.statusHistory.push(new StatusLog(Context.get("trusted_time"), this.status));
         }
@@ -389,6 +408,9 @@ export class Trade {
         if (key === "tradeDate") {
             return tradeInfo.tradeDate === value;
         }        
+        if (key === "underSanction") {
+            return value === "true";
+        }                
         return false;
     }
 
@@ -422,6 +444,9 @@ export class Trade {
         }
         if (key === "tradeDate") {
             return min < parseInt(tradeInfo.tradeDate) && parseInt(tradeInfo.tradeDate) < max;
+        }
+        if (key === "amlRiskRank") {
+            return max < 0.05;   //Percentage of risk
         }
         return false;        
     }

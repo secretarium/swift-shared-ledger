@@ -392,6 +392,7 @@ export class SharedLedger {
                     break;
                 case RoleType.ClearingHouse:
                 case RoleType.Custodian:
+                case RoleType.AMLSanction:
                     if (trade.status === StatusType.Settling || trade.status === StatusType.Settled) {
                         result.push(new TradeIdentification(trade.UTI, trade.tokenB64));
                     }
@@ -429,10 +430,7 @@ export class SharedLedger {
             case RoleType.Investor: {
                 filteredTrade.filterPrivateComments(role);
                 filteredTrade.matchTradeDetails = new Array<MatchLog>();
-                filteredTrade.matchAssetTransfer = new Array<MatchLog>();
-                filteredTrade.matchMoneyTransfer = new Array<MatchLog>();
                 filteredTrade.auditHistory = new Array<AuditLog>();
-                filteredTrade.statusHistory = new Array<StatusLog>();                
             }
             break;
             case RoleType.SettlementAgent: {
@@ -443,23 +441,26 @@ export class SharedLedger {
             break;
             case RoleType.ClearingHouse: {
                 filteredTrade.filterPrivateComments(role);
-                filteredTrade.tradeCreation.onlyKeepAsset();
+                filteredTrade.tradeCreation.onlyKeepAssetAndBuyerInfo();
                 filteredTrade.matchTradeDetails = new Array<MatchLog>();
-                filteredTrade.matchAssetTransfer = new Array<MatchLog>();
                 filteredTrade.auditHistory = new Array<AuditLog>();
-                filteredTrade.statusHistory = new Array<StatusLog>();                
             }
             break;
             case RoleType.Custodian:
                 filteredTrade.filterPrivateComments(role);
-                filteredTrade.tradeCreation.onlyKeepAsset();
+                filteredTrade.tradeCreation.onlyKeepAssetAndSellerInfo();
                 filteredTrade.matchTradeDetails = new Array<MatchLog>();
-                filteredTrade.matchMoneyTransfer = new Array<MatchLog>();
                 filteredTrade.auditHistory = new Array<AuditLog>();
-                filteredTrade.statusHistory = new Array<StatusLog>();                
+                break;
+            case RoleType.AMLSanction:
+                filteredTrade.filterPrivateComments(role);
+                filteredTrade.tradeCreation.onlyKeepAssetBuyerAndSellerInfo();
+                filteredTrade.matchTradeDetails = new Array<MatchLog>();
+                filteredTrade.auditHistory = new Array<AuditLog>();
                 break;
             case RoleType.Admin:
             case RoleType.Regulator:
+                filteredTrade.auditHistory = new Array<AuditLog>();
                 break;
             default:                
                 return "`Error: User ${user.id} is not authorized to query trade ${UTI}`";

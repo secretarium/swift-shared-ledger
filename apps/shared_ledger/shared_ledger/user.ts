@@ -18,6 +18,7 @@ export enum RoleType {
     ClearingHouse = 7,
     SettlementAgent = 8,
     Regulator = 9,    
+    AMLSanction = 10,
 };
 
 export function role_type(input: string): RoleType {
@@ -39,6 +40,8 @@ export function role_type(input: string): RoleType {
         return RoleType.SettlementAgent;
     if (input === "regulator")
         return RoleType.Regulator;
+    if (input === "amlSanction")
+        return RoleType.AMLSanction;
     return RoleType.None;
 }
 
@@ -99,6 +102,7 @@ export class SharedLedgerRole {
  *  Clearinghouse: Ensures the trade is confirmed, matched, and netted.
  *  Settlement Agent: Manages final settlement and transfer of ownership.
  *  Regulator: Monitors the trades for compliance and ensures transparency.
+ *  AML Sanction: Monitors the trades for Anti-Money Laundering and Sanctions.
  **/
 @JSON
 export class User {
@@ -170,14 +174,14 @@ export class User {
         return RoleType.None;
     }   
 
-    getJurisdiction(sharedLedgerId: string): string {
+    getJurisdiction(sharedLedgerId: string): JurisdictionType {
         for (let i = 0; i < this.roles.length; ++i)
         {
             if (this.roles[i].sharedLedgerId === sharedLedgerId) {
                 return this.roles[i].jurisdiction;
             }
         }
-        return "";
+        return JurisdictionType.None;
     }       
 
     getContent(): void {
