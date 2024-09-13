@@ -1,12 +1,13 @@
 {
     "version": "1",
+    "targetCluster": "9522a2de-85cb-4753-81ae-cbfe55af95f3",
     "branches": [
         "*"
     ],
     "applications": [
         {
-            "name": "SharedLedger",
-            "slug": "sharedLedger",
+            "name": "Swift-Hackathon-2024",
+            "slug": "swifthackathon2024",
             "version": "0.0.1",
             "rootDir": "/apps/shared_ledger"
         }
