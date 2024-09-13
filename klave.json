@@ -14,7 +14,7 @@
         {
             "name": "Swift-Hackathon-2024-WASM",
             "slug": "swifthackathon2024wasm",
-            "version": "0.0.1",
+            "version": "0.0.2",
             "rootDir": "/apps/shared_ledger_wasm"
         }
     ]
