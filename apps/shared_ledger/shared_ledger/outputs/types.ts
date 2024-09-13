@@ -1,14 +1,15 @@
 import { JSON } from "@klave/sdk";
-import { StatusLog, Trade, TradeConfirmation, TradeExecution, TradeInfo, TradeSettlement, TradeTransfer } from "../trade";
-import { User } from "../user";
+import { StatusLog, StatusType, Trade, TradeInfo } from "../trade";
+import { RoleType, User } from "../user";
 import { address, amount, datetime } from "../../klave/types";
+import { TradeIdentification } from "../inputs/types";
 
 @JSON 
 export class StatusAndTokenOutput {
     status: string;
     message: string;
-    UTI: string;    //generatedUTI
-    tokenB64: string;  //token for access to the shared ledger
+    UTI: string;
+    tokenB64: string;
 }
 
 @JSON 
@@ -21,7 +22,7 @@ export class SubmitTradeOutput {
 export class StatusOutput {
     status: string;
     message: string;
-    UTI: string;    //just as a reminder
+    UTI: string;
 }
 
 @JSON 
@@ -32,102 +33,18 @@ export class GenericOutput {
 
 @JSON 
 export class QueryTradeFromCreation {
-    UTI: string;                    // UTI of the trade
-    status: string;                 // Current status (e.g., "pending", "confirmed", "settled")
-    status_history : Array<StatusLog>;
-    data: TradeInfo;                // Trade Execution data
+    UTI: string;
+    status: StatusType;
+    statusHistory : Array<StatusLog>;
+    data: TradeInfo;
 
     constructor(trade: Trade) {
         this.UTI = trade.UTI;
         this.status = trade.status;
-        this.status_history = trade.status_history;
-        this.data = new TradeInfo(trade.tradeInfo.buyer, trade.tradeInfo.seller, trade.tradeInfo.asset, trade.tradeInfo.quantity, trade.tradeInfo.price, trade.tradeInfo.tradeDate, trade.tradeInfo.jurisdiction);
+        this.statusHistory = trade.statusHistory;
+        let tradeInfo = trade.tradeCreation;
+        this.data = new TradeInfo(tradeInfo.info);
     }
-}
-@JSON 
-export class QueryTradeFromCreationOutput {
-    requestId: string;
-    result: QueryTradeFromCreation;
-}
-
-@JSON 
-export class QueryTradeFromExecution {
-    UTI: string;                    // UTI of the trade
-    status: string;                 // Current status (e.g., "pending", "confirmed", "settled")
-    status_history : Array<StatusLog>;
-    data: TradeExecution;           // Trade Execution data
-
-    constructor(trade: Trade) {
-        this.UTI = trade.UTI;
-        this.status = trade.status;
-        this.status_history = trade.status_history;
-        this.data = new TradeExecution(trade.tradeExecution.executedBy, trade.tradeExecution.executionDate, trade.tradeExecution.executionStatus);
-    }
-}
-@JSON 
-export class QueryTradeFromExecutionOutput {
-    requestId: string;
-    result: QueryTradeFromExecution;
-}
-
-@JSON 
-export class QueryTradeFromConfirmation {
-    UTI: string;                    // UTI of the trade
-    status: string;                 // Current status (e.g., "pending", "confirmed", "settled")
-    status_history : Array<StatusLog>;
-    data: TradeConfirmation;        // Trade Confirmation data
-
-    constructor(trade: Trade) {
-        this.UTI = trade.UTI;
-        this.status = trade.status;
-        this.status_history = trade.status_history;
-        this.data = new TradeConfirmation(trade.tradeConfirmation.confirmedBy, trade.tradeConfirmation.confirmationDate, trade.tradeConfirmation.confirmationStatus);
-    }
-}
-@JSON 
-export class QueryTradeFromConfirmationOutput {
-    requestId: string;
-    result: QueryTradeFromConfirmation;
-}
-
-@JSON 
-export class QueryTradeFromTransfer {
-    UTI: string;                    // UTI of the trade
-    status: string;                 // Current status (e.g., "pending", "confirmed", "settled")
-    status_history : Array<StatusLog>;
-    data: TradeTransfer;            // Trade Transfer data
-
-    constructor(trade: Trade) {
-        this.UTI = trade.UTI;
-        this.status = trade.status;
-        this.status_history = trade.status_history;
-        this.data = new TradeTransfer(trade.tradeTransfer.transferredBy, trade.tradeTransfer.transferDate, trade.tradeTransfer.transferStatus);
-    }
-}
-@JSON 
-export class QueryTradeFromTransferOutput {
-    requestId: string;
-    result: QueryTradeFromTransfer;
-}
-
-@JSON 
-export class QueryTradeFromSettlement {
-    UTI: string;                    // UTI of the trade
-    status: string;                 // Current status (e.g., "pending", "confirmed", "settled")
-    status_history : Array<StatusLog>;
-    data: TradeSettlement;          // Trade Transfer data
-
-    constructor(trade: Trade) {
-        this.UTI = trade.UTI;
-        this.status = trade.status;
-        this.status_history = trade.status_history;
-        this.data = new TradeSettlement(trade.tradeSettlement.settledBy, trade.tradeSettlement.settlementDate, trade.tradeSettlement.settlementStatus);
-    }
-}
-@JSON 
-export class QueryTradeFromSettlementOutput {
-    requestId: string;
-    result: QueryTradeFromSettlement;
 }
 
 @JSON 
@@ -149,6 +66,12 @@ export class TokenIdentityOutput {
 export class ListOutput {
     requestId: string;
     result: Array<string>;    
+}
+
+@JSON 
+export class ListTradeIDs {
+    requestId: string;
+    result: Array<TradeIdentification>;    
 }
 
 @JSON

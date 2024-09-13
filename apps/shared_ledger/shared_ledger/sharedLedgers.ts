@@ -20,7 +20,7 @@ export class SharedLedgers {
      */
     static load(): SharedLedgers {
         let sharedLedgersTable = Ledger.getTable(SharedLedgersTable).get("ALL");
-        if (sharedLedgersTable.length == 0) {            
+        if (sharedLedgersTable.length === 0) {            
             // success(`New SharedLedgers Table created successfully`);
             return new SharedLedgers;
         }
@@ -81,7 +81,7 @@ export class SharedLedgers {
      * @returns
      */
     list(): void {
-        if (this.sharedLedgers.length == 0) {
+        if (this.sharedLedgers.length === 0) {
             success(`No sharedLedger found in the list of sharedLedgers`);
         }
 

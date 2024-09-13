@@ -1,17 +1,13 @@
 import { JSON } from "@klave/sdk";
-import { address, amount, datetime } from "../../klave/types";
+import { amount } from "../../klave/types";
+import { TradeInfo } from "../trade";
+import { JurisdictionType, RoleType } from "../user";
 
 @JSON 
 export class SubmitTradeInput {
     SLID: string;               // SharedLedger ID
     UTI: string;                // Optional: UTI if generated externally
-    buyer: address;             // Blockchain address of buyer
-    seller: address;            // Blockchain address of seller
-    asset: string;              // Asset being traded (e.g., stock symbol)
-    quantity: amount;           // Quantity of the asset
-    price: amount;              // Trade price
-    tradeDate: datetime;        // Date and time of trade execution
-    jurisdiction: string;       // Jurisdiction of the trade
+    tradeInfo: TradeInfo;         // Trade details
 }
 
 @JSON 
@@ -25,6 +21,11 @@ export class TradeInput {
 export class TradeIdentification {
     UTI: string;                // UTI of the trade
     tokenB64: string;           // Base64 encoded token
+
+    constructor(UTI: string, tokenB64: string) {
+        this.UTI = UTI;
+        this.tokenB64 = tokenB64;
+    }
 }
 @JSON
 export class MultipleTradeInput {
@@ -33,59 +34,41 @@ export class MultipleTradeInput {
 }
 
 @JSON 
-export class ExecuteTradeInput {
-    SLID: string;    
-    UTI: string;
-    tokenB64: string;           // Base64 encoded token
-    executionStatus: string;    // Executed/MetaData
+export class ActionTradeInput {
+    SLID: string;           // SharedLedger ID
+    UTI: string;            // UTI of the trade
+    tokenB64: string;       // Base64 encoded token
+    publicData: boolean;       // Public or Private Data
+    metadata: string;       // MetaData
 }
 
 @JSON 
-export class ConfirmTradeInput {
-    SLID: string;    
-    UTI: string;
-    tokenB64: string;           // Base64 encoded token
-    confirmationStatus: string; // Confirmed/Rejected/MetaData
-}
-
-
-@JSON
-export class TransferAssetInput {
-    SLID: string;
-    UTI: string;
-    tokenB64: string;           // Base64 encoded token
-    transferStatus: string;         // MetaData
-}
-
-
-@JSON
-export class SettleTradeInput {
-    SLID: string;
-    UTI: string;
-    tokenB64: string;           // Base64 encoded token
-    settlementStatus: string;       // MetaData
-}
-
-@JSON
-export class CancelTradeInput {
-    SLID: string;
-    UTI: string;
-    tokenB64: string;           // Base64 encoded token
-    reason: string;         // Reason for cancelling the trade
+export class KeyValueMatchInput {
+    SLID: string;           // SharedLedger ID
+    UTI: string;            // UTI of the trade
+    tokenB64: string;       // Base64 encoded token
+    key: string;            
+    value: string;           
 }
 
 @JSON 
-export class QueryTradeByUTIInput {
-    SLID: string;
-    UTI: string;
-    tokenB64: string;           // Base64 encoded token
+export class BoundaryMatchInput {
+    SLID: string;           // SharedLedger ID
+    UTI: string;            // UTI of the trade
+    tokenB64: string;       // Base64 encoded token
+    key: string;            
+    min: amount;           
+    max: amount;
 }
 
 @JSON 
-export class AuditTradeByUTIInput {
-    SLID: string;
-    UTI: string;
-    tokenB64: string;           // Base64 encoded token
+export class LevenshteinMatchInput {
+    SLID: string;           // SharedLedger ID
+    UTI: string;            // UTI of the trade
+    tokenB64: string;       // Base64 encoded token
+    key: string;            
+    value: string;           
+    distance: amount;
 }
 
 @JSON 
@@ -93,14 +76,13 @@ export class SetIdentitiesInput {
     resetKlaveServer: boolean;
 }
 
-
 @JSON
 export class UserRequestInput {
     SLID: string;
-    role: string;
-    jurisdiction: string;
+    role: RoleType;
+    jurisdiction: JurisdictionType;
 
-    constructor(SLID: string, role: string, jurisdiction: string) {
+    constructor(SLID: string, role: RoleType, jurisdiction: JurisdictionType) {
         this.SLID = SLID;
         this.role = role;
         this.jurisdiction = jurisdiction;

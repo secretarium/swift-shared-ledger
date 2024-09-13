@@ -22,7 +22,7 @@ export class Keys {
      */
     static load(): Keys {
         let keysTable = Ledger.getTable(KeysTable).get("ALL");
-        if (keysTable.length == 0) {
+        if (keysTable.length === 0) {
             // success(`New Keys Table created successfully`);
             return new Keys;
         }
@@ -71,7 +71,7 @@ export class Keys {
      * @returns
      */
     list(): void {
-        if (this.klaveServer_private_key == "") {
+        if (this.klaveServer_private_key === "") {
             success("No keys have been set yet.");
             return;
         }
@@ -95,7 +95,7 @@ export class Keys {
      * @returns
      */
     isSet(): boolean {
-        if (this.klaveServer_private_key == "") {
+        if (this.klaveServer_private_key === "") {
             return false;
         }
         return true;

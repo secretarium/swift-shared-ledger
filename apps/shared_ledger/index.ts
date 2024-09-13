@@ -1,13 +1,13 @@
 import { Context, Notifier } from "@klave/sdk/assembly";
-import { TradeInput, ConfirmTradeInput, SettleTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, TransferAssetInput, SubmitTradeInput, MultipleTradeInput} from "./shared_ledger/inputs/types";
-import { ListOutput, GenericOutput } from "./shared_ledger/outputs/types";
+import { TradeInput, ActionTradeInput, SetIdentitiesInput, UserRequestInput, ApproveUserRequestInput, SharedLedgerIDInput, SubmitTradeInput, MultipleTradeInput, KeyValueMatchInput, LevenshteinMatchInput, BoundaryMatchInput} from "./shared_ledger/inputs/types";
+import { ListOutput, GenericOutput, ListTradeIDs } from "./shared_ledger/outputs/types";
 import { Keys } from "./shared_ledger/keys";
 import { success, error } from "./klave/types";
 import { UserRequests } from "./shared_ledger/userRequests";
 import { UserRequest } from "./shared_ledger/userRequest";
 import { SharedLedger } from "./shared_ledger/sharedLedger";
 import { Users } from "./shared_ledger/users";
-import { SharedLedgerRole, User } from "./shared_ledger/user";
+import { JurisdictionType, RoleType, SharedLedgerRole, User } from "./shared_ledger/user";
 import { SharedLedgers } from "./shared_ledger/sharedLedgers";
 
 /**
@@ -24,12 +24,12 @@ export function submitTrade(input: SubmitTradeInput): void {
         sharedLedger.save();    
         return;
     }
-}
+}   
 
 /**
  * @transaction
  */
-export function confirmTrade(input: ConfirmTradeInput): void {
+export function addMetadata(input: ActionTradeInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
     if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
@@ -47,23 +47,15 @@ export function confirmTrade(input: ConfirmTradeInput): void {
         error("User not found");
         return;
     }
-
-    if (sharedLedger.confirmTrade(input)) {
-        Notifier.sendJson<GenericOutput>({
-            requestId: Context.get('request_id'),
-            result: {
-                status: "success",
-                message: "",
-                UTI: input.UTI,
-            }
-        });    
+    if (sharedLedger.addMetadata(input)) {
+        success(`Metadata added to trade ${input.UTI}`);
     }
 }
 
 /**
  * @transaction
  */
-export function transferAsset(input: TransferAssetInput): void {
+export function exactMatch(input: KeyValueMatchInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
     if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
@@ -81,23 +73,20 @@ export function transferAsset(input: TransferAssetInput): void {
         error("User not found");
         return;
     }
-
-    if (sharedLedger.transferTrade(input)) {
-        Notifier.sendJson<GenericOutput>({
-            requestId: Context.get('request_id'),
-            result: {
-                status: "success",
-                message: "",
-                UTI: input.UTI,
-            }
-        });    
+    if (sharedLedger.exactMatch(input)) {
+        success(`Exact match found for ${input.key} = ${input.value}`);
     }
+    else {
+        error(`Exact match not found for ${input.key} = ${input.value}`);
+    }
+
+    return;
 }
 
 /**
  * @transaction
  */
-export function settleTrade(input: SettleTradeInput): void {
+export function levenshteinMatch(input: LevenshteinMatchInput): void {
     let sharedLedger = SharedLedger.load(input.SLID);
     if (sharedLedger === null) {
         error(`SharedLedger does not exist. Create it first.`);
@@ -115,17 +104,78 @@ export function settleTrade(input: SettleTradeInput): void {
         error("User not found");
         return;
     }
-
-    if (sharedLedger.settleTrade(input)) {
-        Notifier.sendJson<GenericOutput>({
-            requestId: Context.get('request_id'),
-            result: {
-                status: "success",
-                message: "",
-                UTI: input.UTI,
-            }
-        });    
+    if (sharedLedger.levenshteinMatch(input)) {
+        success(`Levenshtein match found for ${input.key} = ${input.value}`);
     }
+    else {
+        error(`Levenshtein match not found for ${input.key} = ${input.value}`);
+    }
+    return;
+}
+
+/**
+ * @transaction
+ */
+export function boundaryMatch(input: BoundaryMatchInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger does not exist. Create it first.`);
+        return;
+    }
+
+    if (sharedLedger.locked) {
+        error(`SharedLedger ${input.SLID} is now locked.`);
+        return;
+    }
+
+    let user = User.load(Context.get('sender'));
+    if (user === null)
+    {
+        error("User not found");
+        return;
+    }
+    if (sharedLedger.boundaryMatch(input)) {
+        success(`Boundary match found for ${input.key} between ${input.min} and ${input.max}`);
+    }
+    else {
+        error(`Boundary match not found for ${input.key} between ${input.min} and ${input.max}`);
+    }
+    return;
+}
+
+
+/**
+ * @transaction
+ */
+export function getAllTrades(input: SharedLedgerIDInput): void {
+    let sharedLedger = SharedLedger.load(input.SLID);
+    if (sharedLedger === null) {
+        error(`SharedLedger does not exist. Create it first.`);
+        return;
+    }
+
+    if (sharedLedger.locked) {
+        error(`SharedLedger ${input.SLID} is now locked.`);
+        return;
+    }
+
+    if (!sharedLedger.users.includes(Context.get('sender'))) {
+        error(`You are not authorized to remove trades from this sharedLedger.`);
+        return;
+    }
+
+    let user = User.load(Context.get('sender'));
+    if (user === null)
+    {
+        error("User not found");
+        return;
+    }    
+    let listTrades = sharedLedger.getAllTrades(user);
+
+    Notifier.sendJson<ListTradeIDs>({
+        requestId: Context.get('request_id'),
+        result: listTrades
+    });
 }
 
 /**
@@ -197,7 +247,7 @@ export function createSuperAdmin(unused: string): void {
         error("Super admin already exists");
         return;
     }
-    if (users.addUser(Context.get('sender'), "super", "admin", "global")) {
+    if (users.addUser(Context.get('sender'), "super", RoleType.Admin, JurisdictionType.Global)) {
         users.save();
         success(`Super admin set-up successfully.`);
     }
@@ -212,11 +262,6 @@ export function createSharedLedger(input: SharedLedgerIDInput): void {
         error("User not found");
         return;
     }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to create a dataroom.");
-        return;
-    }
     let sharedLedgers = SharedLedgers.load();
     if (sharedLedgers.addSharedLedger(input.SLID)) {
         sharedLedgers.save();
@@ -228,7 +273,7 @@ export function createSharedLedger(input: SharedLedgerIDInput): void {
  */
 export function createUserRequest(input: UserRequestInput): void {
     let users = Users.load();
-    if (users.addUser(Context.get('sender'), input.SLID, "pending", input.jurisdiction)) {
+    if (users.addUser(Context.get('sender'), input.SLID, input.role, input.jurisdiction)) {
         users.save();
     }
     
@@ -248,11 +293,6 @@ export function listUserRequests(unused: string): void {
         error("User not found");
         return;
     }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to see user requests");
-        return;
-    }
 
     let userRequests = UserRequests.load();
     userRequests.list();
@@ -268,11 +308,6 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
         error("User not found");
         return;
     }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to see user requests");
-        return;
-    }
 
     let userRequest = UserRequest.load(input.userRequestId);
     if (!userRequest)
@@ -281,7 +316,7 @@ export function approveUserRequest(input: ApproveUserRequestInput): void {
         return;
     }
 
-    if (userRequest.sharedLedgerId == "super" && userRequest.role == "admin") {
+    if (userRequest.sharedLedgerId === "super" && userRequest.role === RoleType.Admin) {
         // This is a user request to become an admin
         let user = User.load(userRequest.userId);
         if (user === null)
@@ -336,11 +371,6 @@ export function resetIdentities(input: SetIdentitiesInput): void {
     if (user === null)
     {
         error("User not found");
-        return;
-    }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to reset identities");
         return;
     }
 
@@ -406,11 +436,6 @@ export function clearAll(unused: string): void {
     if (user === null)
     {
         error("User not found");
-        return;
-    }
-    if (!user.isAdmin("super"))
-    {
-        error("You are not allowed to clear all data.");
         return;
     }
     user.delete();

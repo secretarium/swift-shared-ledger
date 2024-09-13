@@ -3,6 +3,7 @@ import { success, error } from "../klave/types";
 import { UserRequest } from "./userRequest";
 import { ListOutput } from "./outputs/types";
 import { Notifier } from "@klave/sdk/assembly";
+import { JurisdictionType, RoleType } from "./user";
 
 const UserRequestsTable = "UserRequestsTable";
 
@@ -23,7 +24,7 @@ export class UserRequests {
      */
     static load(): UserRequests {
         let userRequestsTable = Ledger.getTable(UserRequestsTable).get("ALL");
-        if (userRequestsTable.length == 0) {            
+        if (userRequestsTable.length === 0) {            
             // success(`New UserRequests Table created successfully`);
             return new UserRequests;
         }
@@ -46,7 +47,7 @@ export class UserRequests {
      * @param dataRoomId 
      * @param role 
      */
-    addUserRequest(dataRoomId: string, role: string, jurisdiction: string): boolean {
+    addUserRequest(dataRoomId: string, role: RoleType, jurisdiction: JurisdictionType): boolean {
         let userRequest = new UserRequest(dataRoomId, role, jurisdiction);
         userRequest.save();
         this.userRequests.push(userRequest.id);
@@ -78,7 +79,7 @@ export class UserRequests {
      * @returns
      */
     list(): void {
-        if (this.userRequests.length == 0) {
+        if (this.userRequests.length === 0) {
             success(`No userRequest found in the list of userRequests`);
         }
         

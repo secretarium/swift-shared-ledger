@@ -42,7 +42,7 @@ export function role_type(input: string): RoleType {
     return RoleType.None;
 }
 
-/** Role types. */
+/** Jurisdiction types. */
 export enum JurisdictionType {    
     None = 0,
     Global = 1,
@@ -82,11 +82,11 @@ export function jurisdiction_type(input: string): JurisdictionType {
 export class SharedLedgerRole {
     sharedLedgerId: string;
     role: RoleType;
-    jurisdiction: string;
+    jurisdiction: JurisdictionType;
 
-    constructor(sharedLedgerId: string, role: string, jurisdiction: string) {
+    constructor(sharedLedgerId: string, role: RoleType, jurisdiction: JurisdictionType) {
         this.sharedLedgerId = sharedLedgerId;
-        this.role = role_type(role);
+        this.role = role;
         this.jurisdiction = jurisdiction;
     }
 }
@@ -118,7 +118,7 @@ export class User {
 
     static load(id: string) : User | null {
         let userTable = Ledger.getTable(UsersTable).get(id);
-        if (userTable.length == 0) {
+        if (userTable.length === 0) {
             // error(`User ${id} does not exist. Create it first`);
             return null;
         }
@@ -143,8 +143,8 @@ export class User {
     isAdmin(sharedLedgerId: string): boolean {
         for (let i = 0; i < this.roles.length; ++i)
         {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.Admin;
+            if (this.roles[i].sharedLedgerId === sharedLedgerId) {
+                return this.roles[i].role === RoleType.Admin;
             }
         }
         return false;
@@ -153,82 +153,32 @@ export class User {
     isRegulator(sharedLedgerId: string): boolean {
         for (let i = 0; i < this.roles.length; ++i)
         {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.Regulator;
+            if (this.roles[i].sharedLedgerId === sharedLedgerId) {
+                return this.roles[i].role === RoleType.Regulator;
             }
         }
         return false;
     }   
 
+    getRole(sharedLedgerId: string): RoleType {
+        for (let i = 0; i < this.roles.length; ++i)
+        {
+            if (this.roles[i].sharedLedgerId === sharedLedgerId) {
+                return this.roles[i].role;
+            }
+        }
+        return RoleType.None;
+    }   
+
     getJurisdiction(sharedLedgerId: string): string {
         for (let i = 0; i < this.roles.length; ++i)
         {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
+            if (this.roles[i].sharedLedgerId === sharedLedgerId) {
                 return this.roles[i].jurisdiction;
             }
         }
         return "";
     }       
-
-    canCreate(sharedLedgerId: string): boolean {
-        for (let i = 0; i < this.roles.length; ++i)
-        {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.Trader || this.roles[i].role == RoleType.Investor;
-            }
-        }
-        return false;
-    }
-
-    canExecute(sharedLedgerId: string): boolean {
-        for (let i = 0; i < this.roles.length; ++i)
-        {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.Broker || this.roles[i].role == RoleType.Dealer;
-            }
-        }
-        return false;
-    }
-
-    canConfirm(sharedLedgerId: string): boolean {
-        for (let i = 0; i < this.roles.length; ++i)
-        {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.ClearingHouse;
-            }
-        }
-        return false;
-    }
-
-    canTransfer(sharedLedgerId: string): boolean {
-        for (let i = 0; i < this.roles.length; ++i)
-        {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.Custodian;
-            }
-        }
-        return false;
-    }
-
-    canSettle(sharedLedgerId: string): boolean {
-        for (let i = 0; i < this.roles.length; ++i)
-        {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.SettlementAgent;
-            }
-        }
-        return false;
-    }
-
-    canAccess(sharedLedgerId: string): boolean {
-        for (let i = 0; i < this.roles.length; ++i)
-        {
-            if (this.roles[i].sharedLedgerId == sharedLedgerId) {
-                return this.roles[i].role == RoleType.Regulator;
-            }
-        }
-        return false;
-    }
 
     getContent(): void {
         Notifier.sendJson<UserOutput>({
@@ -240,7 +190,7 @@ export class User {
     updateRole(newRole: SharedLedgerRole): void {
         for (let i = 0; i < this.roles.length; ++i)
         {
-            if (this.roles[i].sharedLedgerId == newRole.sharedLedgerId) {
+            if (this.roles[i].sharedLedgerId === newRole.sharedLedgerId) {
                 this.roles[i].role = newRole.role;
                 return;
             }

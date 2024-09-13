@@ -1,8 +1,8 @@
 import {Notifier, JSON} from "@klave/sdk"
 
 export type address = string
-export type amount = u64
-export type index = i32
+export type amount = number
+export type index = number
 export type datetime = string
 
 @JSON

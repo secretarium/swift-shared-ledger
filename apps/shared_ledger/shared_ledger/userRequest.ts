@@ -1,6 +1,7 @@
 import { Ledger, JSON, Crypto, Context } from "@klave/sdk";
 import { success, error } from "../klave/types"
 import { encode as b64encode } from 'as-base64/assembly';
+import { JurisdictionType, RoleType } from "./user";
 
 const UserRequestsTable = "UserRequestsTable";
 
@@ -15,10 +16,10 @@ export class UserRequest {
     id: string;
     userId: string;
     sharedLedgerId: string;
-    role: string;
-    jurisdiction: string;
+    role: RoleType;
+    jurisdiction: JurisdictionType;
 
-    constructor(sharedLedgerId: string, role: string, jurisdiction: string) {
+    constructor(sharedLedgerId: string, role: RoleType, jurisdiction: JurisdictionType) {
         this.id = b64encode(Crypto.Utils.convertToUint8Array(Crypto.getRandomValues(64)));
         this.userId = Context.get('sender');
         this.sharedLedgerId = sharedLedgerId;
@@ -28,7 +29,7 @@ export class UserRequest {
 
     static load(id: string) : UserRequest | null {
         let userTable = Ledger.getTable(UserRequestsTable).get(id);
-        if (userTable.length == 0) {
+        if (userTable.length === 0) {
             // error(`UserRequest ${id} does not exist. Create it first`);
             return null;
         }
@@ -45,7 +46,8 @@ export class UserRequest {
 
     delete(): void {
         this.sharedLedgerId = "";
-        this.role = "";
+        this.role = RoleType.None;
+        this.jurisdiction = JurisdictionType.None;
         Ledger.getTable(UserRequestsTable).unset(this.id);
         success(`UserRequest deleted successfully: ${this.id}`);
         this.id = "";
