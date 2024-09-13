@@ -1,5 +1,4 @@
 <a href="https://klave.com/">
-  <img alt="Klave - Confidential AI Inference" src="https://klave.com/images/marketplace/swift-shared-ledger.svg">
   <h1 align="center">Shared Ledger for Swift Hackathon - Challenge 2</h1>
 </a>
 
