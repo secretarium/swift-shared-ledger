@@ -13,10 +13,8 @@ const TradesTable = "TradesTable";
 export class TradeInfo {
     buyerName: address;             // Blockchain address of buyer  
     buyerCountry: string;           // Country of buyer       
-    buyerAccountId: string;           // AccountId of buyer       
     sellerName: address;            // Blockchain address of seller    
     sellerCountry: string;          // Country of seller
-    sellerAccountId: string;          // AccountId of seller
     asset: string;                  // Asset being traded           - custodian/clearing house
     quantity: amount;               // Quantity of the asset        
     price: amount;                  // Trade price                  
@@ -27,9 +25,7 @@ export class TradeInfo {
         this.buyerName = tradeInput.buyerName;
         this.sellerName = tradeInput.sellerName;
         this.buyerCountry = tradeInput.buyerCountry;
-        this.buyerAccountId = tradeInput.buyerAccountId;
         this.sellerCountry = tradeInput.sellerCountry;
-        this.sellerAccountId = tradeInput.sellerAccountId;
         this.asset = tradeInput.asset;
         this.quantity = tradeInput.quantity;
         this.price = tradeInput.price;
