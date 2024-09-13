@@ -12,7 +12,8 @@ const TradesTable = "TradesTable";
 @JSON
 export class TradeInfo {
     buyerName: address;             // Blockchain address of buyer  
-    buyerCountry: string;           // Country of buyer       
+    buyerCountry: string;           // Country of buyer     
+    buyerAccountId: string;           // AccountId of buyer         
     sellerName: address;            // Blockchain address of seller    
     sellerCountry: string;          // Country of seller
     asset: string;                  // Asset being traded           - custodian/clearing house
@@ -25,6 +26,7 @@ export class TradeInfo {
         this.buyerName = tradeInput.buyerName;
         this.sellerName = tradeInput.sellerName;
         this.buyerCountry = tradeInput.buyerCountry;
+        this.buyerAccountId = tradeInput.buyerAccountId;
         this.sellerCountry = tradeInput.sellerCountry;
         this.asset = tradeInput.asset;
         this.quantity = tradeInput.quantity;
